@@ -1,9 +1,11 @@
-package com.example.android.gamelist;
+package com.cossconsulting.gamelist;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
-import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -13,32 +15,51 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    private final String BASE_URL = "https://dl.dropboxusercontent.com/s/1b7jlwii7jfvuh0/games";
+    private static final String TAG = "Giovanni";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        List<Game> = new List<>();
 
-        Retrofit  retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
+
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(RetrofitService.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         RetrofitService service = retrofit.create(RetrofitService.class);
-        Call<List<Game>> requestListGame = service.listGame();
+        Call<AllGames> requestListGame = service.listGame();
 
-        requestListGame.enqueue(new Callback<List<Game>>() {
+        requestListGame.enqueue(new Callback<AllGames>() {
             @Override
-            public void onResponse(Call<List<Game>> call, Response<List<Game>> response) {
+            public void onResponse(Call<AllGames> call, Response<AllGames> response) {
+                if(response.isSuccessful()){
+                    ListView listView = (ListView) findViewById(R.id.gameList);
+                    AllGames listGames = response.body();
 
+                    for(Game g: listGames.games){
+                        Log.i(TAG, "ID: " + g.id
+                                + "\nName: " + g.name
+                                + "\nRelease date: " + g.release_date);
+                    }
+
+                    ArrayAdapter <Game> adapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_1, listGames.games);
+                    listView.setAdapter(adapter);
+
+                    Log.i(TAG, "Sucess");
+
+                } else{
+                    Log.e(TAG, "Error: " + response.code());
+                }
             }
 
             @Override
-            public void onFailure(Call<List<Game>> call, Throwable t) {
-
+            public void onFailure(Call<AllGames> call, Throwable t) {
+                Log.e(TAG, "Error: " + t.getMessage());
             }
         });
+
     }
 }
